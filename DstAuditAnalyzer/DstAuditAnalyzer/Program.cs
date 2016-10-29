@@ -1,6 +1,9 @@
 ﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DstAuditAnalyzer
@@ -10,13 +13,26 @@ namespace DstAuditAnalyzer
         static void Main(string[] args)
         {
             var auditStoragePath = @"C:\Users\hinte_000\Downloads\RawAuditSample";
+            var outputPath = @"C:\Users\hinte_000\Downloads\DstIpAddresses.txt";
 
-            var result = new MapReduceResult();
+            var ipAddresses = new ConcurrentDictionary<string, int>();
 
-            foreach (var documentFolderPath in Directory.EnumerateDirectories(auditStoragePath, "*", SearchOption.TopDirectoryOnly))
-            {
-                DocumentAudit documentAudit = LoadDocumentAudit(documentFolderPath).Result;
-            }
+            int docCounter = 0;
+
+            Directory.EnumerateDirectories(auditStoragePath, "*", SearchOption.TopDirectoryOnly)
+                .AsParallel()
+                .ForAll(p =>
+                {
+                    var docAudit = LoadDocumentAudit(p).Result;
+                    foreach (string ip in docAudit.IpAddresses.Concat(docAudit.IpForwardedForAddresses))
+                    {
+                        ipAddresses.AddOrUpdate(ip, 1, (key, count) => count + 1);
+                    }
+                    Interlocked.Increment(ref docCounter);
+                    Console.WriteLine($"{docCounter} - Done reducing {docAudit.DocumentId} @ {DateTime.Now}");
+                });
+
+            File.WriteAllLines(outputPath, ipAddresses.OrderByDescending(x => x.Value).Select(a => $"{a.Key} - {a.Value}"));
         }
 
         private static async Task<DocumentAudit> LoadDocumentAudit(string documentFolderPath)
