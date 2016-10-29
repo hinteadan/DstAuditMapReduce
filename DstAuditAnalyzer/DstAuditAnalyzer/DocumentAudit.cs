@@ -22,14 +22,14 @@ namespace DstAuditAnalyzer
             this.Timestamps = sortedEntries.Select(a => a.Timestamp).ToArray();
             this.IpAddresses = sortedEntries
                 .SelectMany(a => new string[] {
-                    NullSafeValueFor(a.Metadata, "ClientIpAddress")
+                    StripIpPort(NullSafeValueFor(a.Metadata, "ClientIpAddress"))
                 })
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct()
                 .ToArray();
             this.IpForwardedForAddresses = sortedEntries
                 .SelectMany(a => new string[] {
-                    NullSafeValueFor(a.Metadata, "X-Forwarded-For")
+                    StripIpPort(NullSafeValueFor(a.Metadata, "X-Forwarded-For"))
                 })
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct()
@@ -51,6 +51,20 @@ namespace DstAuditAnalyzer
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct()
                 .ToArray();
+        }
+
+        private static string StripIpPort(string ip)
+        {
+            if (string.IsNullOrWhiteSpace(ip))
+            {
+                return ip;
+            }
+            var portIndex = ip.IndexOf(':');
+            if (portIndex < 0)
+            {
+                return ip;
+            }
+            return ip.Substring(0, portIndex);
         }
 
         private static string NullSafeValueFor(Dictionary<string, string> dictionary, string key)
