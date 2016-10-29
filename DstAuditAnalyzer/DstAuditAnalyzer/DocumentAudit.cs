@@ -21,16 +21,12 @@ namespace DstAuditAnalyzer
             this.DocumentId = auditEntries[0].Document.Id;
             this.Timestamps = sortedEntries.Select(a => a.Timestamp).ToArray();
             this.IpAddresses = sortedEntries
-                .SelectMany(a => new string[] {
-                    StripIpPort(NullSafeValueFor(a.Metadata, "ClientIpAddress"))
-                })
+                .Select(a => StripIpPort(NullSafeValueFor(a.Metadata, "ClientIpAddress")))
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct()
                 .ToArray();
             this.IpForwardedForAddresses = sortedEntries
-                .SelectMany(a => new string[] {
-                    StripIpPort(NullSafeValueFor(a.Metadata, "X-Forwarded-For"))
-                })
+                .SelectMany(a => SplitIpAddressList(NullSafeValueFor(a.Metadata, "X-Forwarded-For")))
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct()
                 .ToArray();
@@ -51,6 +47,16 @@ namespace DstAuditAnalyzer
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct()
                 .ToArray();
+        }
+
+        private static string[] SplitIpAddressList(string ipAddresses)
+        {
+            if (string.IsNullOrWhiteSpace(ipAddresses))
+            {
+                return new string[0];
+            }
+
+            return ipAddresses.Split(',').Select(ip => StripIpPort(ip.Trim())).ToArray();
         }
 
         private static string StripIpPort(string ip)

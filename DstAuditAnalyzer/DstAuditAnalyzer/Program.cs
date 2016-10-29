@@ -32,7 +32,7 @@ namespace DstAuditAnalyzer
                     Console.WriteLine($"{docCounter} - Done reducing {docAudit.DocumentId} @ {DateTime.Now}");
                 });
 
-            File.WriteAllLines(outputPath, ipAddresses.OrderByDescending(x => x.Value).Select(a => $"{a.Key} - {a.Value}"));
+            File.WriteAllLines(outputPath, ipAddresses.OrderByDescending(x => x.Value).Select(a => a.Key));
         }
 
         private static async Task<DocumentAudit> LoadDocumentAudit(string documentFolderPath)
