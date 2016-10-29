@@ -14,6 +14,7 @@ namespace DstAuditAnalyzer
         {
             var auditStoragePath = @"C:\Users\hinte_000\Downloads\RawAuditSample";
             var outputPath = @"C:\Users\hinte_000\Downloads\DstIpAddresses.txt";
+            var outputWeightsPath = @"C:\Users\hinte_000\Downloads\DstIpAddresses_weights.txt";
 
             var ipAddresses = new ConcurrentDictionary<string, int>();
 
@@ -33,6 +34,7 @@ namespace DstAuditAnalyzer
                 });
 
             File.WriteAllLines(outputPath, ipAddresses.OrderByDescending(x => x.Value).Select(a => a.Key));
+            File.WriteAllLines(outputWeightsPath, ipAddresses.OrderByDescending(x => x.Value).Select(a => a.Value.ToString()));
         }
 
         private static async Task<DocumentAudit> LoadDocumentAudit(string documentFolderPath)
